@@ -7,10 +7,19 @@
 #include "mmu.h"
 #include "proc.h"
 
+int forkcnt = 0;
+
 int
 sys_fork(void)
 {
+  forkcnt++;
   return fork();
+}
+
+int
+sys_getforkcount(void)
+{
+  return forkcnt;
 }
 
 int

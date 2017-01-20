@@ -1,7 +1,5 @@
 #include <stdlib.h>
-#include <stdio.h>
-
-/* See `man 3 getopt()` for how to use the getopt function. */
+#include <stdio.h See `man 3 getopt()` for how to use the getopt function. */
 #include <getopt.h>
 
 int main(int argc, char** argv)
@@ -15,7 +13,7 @@ int main(int argc, char** argv)
 	while((opt = getopt(argc, argv, "rn:")) != -1) {
 		switch(opt) {
 		case 'r':
-		  printf("read from stdin and reverse");
+		  printf("just read from stdin");
 		  break;
 		case 'n':
 		  nlines = atoi(optarg);
@@ -25,12 +23,8 @@ int main(int argc, char** argv)
 		 printf("Usage is wrong");
 		 exit(EXIT_FAILURE);
 	 }
-        }
-
-	if(argv[optind]== NULL || argv[optind+1] == NULL) {
-		printf("just read from stdin");
+        
 	}
-
 	/* If successful, exit with a zero status. */
 	return 0;
 }
