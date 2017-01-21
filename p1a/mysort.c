@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-
-/* See `man 3 getopt()` for how to use the getopt function. */
 #include <getopt.h>
 
 int main(int argc, char** argv)
@@ -12,6 +10,11 @@ int main(int argc, char** argv)
 
 	nlines = 0;
 
+	if(argc < 2) {
+		printf("just read from stdin");
+		
+	}
+	
 	while((opt = getopt(argc, argv, "rn:")) != -1) {
 		switch(opt) {
 		case 'r':
@@ -27,10 +30,6 @@ int main(int argc, char** argv)
 	 }
         }
 
-	if(argv[optind]== NULL || argv[optind+1] == NULL) {
-		printf("just read from stdin");
-	}
-
-	/* If successful, exit with a zero status. */
+	/*If successful, exit with a zero status. */
 	return 0;
 }
