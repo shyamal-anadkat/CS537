@@ -7,7 +7,7 @@
 #include "mmu.h"
 #include "proc.h"
 
-int forkcnt = 0;
+int forkcnt;
 
 int
 sys_fork(void)
