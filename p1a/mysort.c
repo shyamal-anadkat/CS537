@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
-
+#include <sys/types.h>
+#include <unistd.h>
 #define MAX_CHAR 1024
 
 static int numLines(FILE *f);
@@ -32,15 +33,10 @@ int cmpstr(const void* a, const void* b) {
 	     }
 
 char** readFile(FILE * in, char** data) {
-	//int cntr,llen;
 	int i = 0; 
 	char line[MAX_CHAR];
-
 	while(fgets(line,MAX_CHAR,in)!=NULL) {
 		data[i] = strdup(line);
-		//data[cntr] = calloc(sizeof(char), llen++);
-		//strcpy(data[cntr], line);
-		//cntr++;
 		i++;
 	}
       return data;
@@ -70,8 +66,6 @@ int main(int argc, char** argv)
 	char *input[MAX_CHAR];
 	char buffer[1024];
 	//char **input = malloc(5*sizeof(char*));
-        //FILE *fileIN, *fileOUT;
-
 	if(argc == 1) {
 		printf("just read from stdin\n");
 		while(fgets(buffer, MAX_CHAR, stdin)!= NULL) 
@@ -82,7 +76,6 @@ int main(int argc, char** argv)
 		 //input[i] = buffer
 		 //memcpy(input[i],buffer,strlen(buffer));
 		 input[i++] = strdup(buffer);
-		 //strcat(input, buffer);
 		 linecnt++;
 		}
 
@@ -90,10 +83,8 @@ int main(int argc, char** argv)
           qsort(input,linecnt,sizeof(char*),cmpstr);
 	  //char *sorted = malloc(sizeof(*input));
 	  for(i = 0; i < linecnt; i++) {
-	  printf("%s",input[i]);
-	   }
-	  printf("%d\n",linecnt);
-	  //free(input);	  
+	  printf("[%d]: %s",i,input[i]);
+	  }	  
 	}
 	
 	while((opt = getopt(argc, argv, "rn:")) != -1) {
@@ -106,9 +97,11 @@ int main(int argc, char** argv)
 			return -1;
 		   }
 		   int lines = numLines(fp);
-		   char **text = malloc(sizeof(char *) * lines); 
+		   //char **text = malloc(MAX_CHAR * lines); 
+		   char **text = malloc(sizeof(char *) * lines);
+		   lseek(fileno(fp), 0, SEEK_SET); 
 	           text = readFile(fp, text);
-		   //printf("lines:%d", lines); 
+		   qsort(text, lines, sizeof(char*),cmpstr);
 		   for(i = 0; i < lines; i++) {
 			 printf("%s\n", text[i]);
 			}
@@ -118,13 +111,11 @@ int main(int argc, char** argv)
 		  nlines = atoi(optarg);
 		  printf("%d lines",nlines);
 		  break;
-		default: /* '?' */
+		  default: /* '?' */
 		 usage(argv[0]);
 		 //exit(EXIT_FAILURE);
 	 }
         }
-        
 	printf("%s", argv[optind]);
-	/*If successful, exit with a zero status. */
 	return 0;
 }
