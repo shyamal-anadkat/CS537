@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 #include <ctype.h>
 #define MAX_CHAR 1024
 
@@ -64,29 +65,44 @@ numLines(FILE *fp) {
 int main(int argc, char** argv)
 {
     int linecnt, i, nlines;
+    linecnt = 0;
+    long val;
     int opt, rflag;
-    char *input[MAX_CHAR];
+    char **input = malloc(sizeof(char*));
     char buffer[1024];
+    char *endptr, *str;
     rflag = 0;
     nlines = -1; 
+    i = 0; 
+
     while((opt = getopt(argc, argv, "rn:")) != -1) {
     switch(opt) {
         case 'r':
             rflag = 1; 
-            //printf("reverse flag set\n");
             break;
         case 'n':
-            goto TEST;
-                for(i = 0; i < strlen(optarg); i++) {
-                if( !isdigit(optarg[i]) ){
-                 fprintf(stderr, "invalid n option %s - expecting a positive integer.\n", 
-                 optarg?optarg:"");
-                 exit(EXIT_FAILURE);
-                }
+            errno = 0; 
+            str = optarg;
+            val = strtol(str, &endptr,10);
+             //input validation 
+             if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+                   || (errno != 0 && val == 0)) {
+               perror("strtol");
+               exit(EXIT_FAILURE);
             }
-            TEST:
-            nlines = atoi(optarg);
-            //printf("lines set\n");
+             if (endptr == str) {
+               fprintf(stderr, "No digits found\n");
+               exit(EXIT_FAILURE);
+            }
+            if (*endptr != '\0') {
+               fprintf(stderr, "Expecting integer arg.\n");
+               exit(EXIT_FAILURE);
+            }
+            if (val < 0) {
+               fprintf(stderr, "Expecting positive integer.\n");
+               exit(EXIT_FAILURE);
+            }
+            nlines = val; 
             break;
         default: // '?'
             usage(argv[0]);
@@ -128,19 +144,19 @@ int main(int argc, char** argv)
                     printf("%s",text[i]);
                 }}
     } else {
-            //printf("just read from stdin\n");
+            
             while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
-             {
-            //input[i] = (char*) malloc(MAX_CHAR);
-            //input =  realloc(input, strlen(input)+1+strlen(buffer));
-            //input[i] = buffer
-            input[i++] = strdup(buffer);
+            {
+            input[i] = malloc(strlen(buffer)+1);
+            strcpy(input[i], buffer);
+            i++;
             linecnt++;
-             }
-        
+            }
+        //free(input);
         if(rflag==1) {
              qsort(input,linecnt,sizeof(char*),cmpstrRev);
         }  else {
+
              qsort(input,linecnt,sizeof(char*),cmpstr);
         }
         
