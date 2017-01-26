@@ -4,20 +4,21 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <ctype.h>
 #define MAX_CHAR 1024
 
+//declarations
 static int numLines(FILE *f);
 static char** readFile(FILE *in, char** data);
 static int cmpstr(const void* a, const void* b);
 static int cmpstrRev(const void* a, const void* b);
 
 
-void
-usage(char *prog)
+//prints out usage 
+void usage(char *prog)
 {
-    fprintf(stderr,"usage: %s <option>\n", prog);
-    exit(1);
-
+    fprintf(stderr,"usage: %s <r> <n:> <optional text file>\n", prog);
 }
 
 //ascending strcmp wrapper
@@ -57,39 +58,44 @@ numLines(FILE *fp) {
             lines++;
         }
     }
-    //printf("lines: %d\n",lines);
     return lines;
 }
 
 int main(int argc, char** argv)
 {
- 
-    int linecnt, i;
-    int opt;
+    int linecnt, i, nlines;
+    int opt, rflag;
     char *input[MAX_CHAR];
     char buffer[1024];
-    int rflag = 0;
-    int nlines = -1; 
-    //char **input = malloc(5*sizeof(char*));
+    rflag = 0;
+    nlines = -1; 
     while((opt = getopt(argc, argv, "rn:")) != -1) {
     switch(opt) {
         case 'r':
-        rflag = 1; 
-            //if(argv[optind] != NULL) {
-            //}
-            printf("reverse flag set\n");
+            rflag = 1; 
+            //printf("reverse flag set\n");
             break;
         case 'n':
+            goto TEST;
+                for(i = 0; i < strlen(optarg); i++) {
+                if( !isdigit(optarg[i]) ){
+                 fprintf(stderr, "invalid n option %s - expecting a positive integer.\n", 
+                 optarg?optarg:"");
+                 exit(EXIT_FAILURE);
+                }
+            }
+            TEST:
             nlines = atoi(optarg);
-            printf("lines set\n");
+            //printf("lines set\n");
             break;
         default: // '?'
             usage(argv[0]);
-            //exit(EXIT_FAILURE);
+            return -1;
         }
     }
 
     if(argv[optind] != NULL) {
+
                 FILE *fp = fopen(argv[optind],"r");
                 if(fp == NULL) {
                     fprintf(stderr,"Error opening file.\n");
@@ -99,6 +105,7 @@ int main(int argc, char** argv)
                 
                 char **text = malloc(sizeof(char *) * lines);
                 
+                //reset file pointer 
                 lseek(fileno(fp), 0, SEEK_SET);
                 
                 text = readFile(fp, text);
@@ -109,41 +116,48 @@ int main(int argc, char** argv)
                 qsort(text, lines, sizeof(char*),cmpstr);
             }
                 
-                if(nlines != -1) {
-        for(i = 0; i < nlines; i++) {
-            printf("[%d]: %s",i,text[i]);
-        } } else {
-                for(i = 0; i < lines; i++) {
-                   printf("[%d]: %s",i,text[i]);
+        if(nlines != -1) {
+            if(nlines > lines) {
+                fprintf(stderr,"Invalid number of lines.\n");
+                return -1;
+            }
+            for(i = 0; i < nlines; i++) {
+            printf("%s",text[i]);
+             } } else {
+                    for(i = 0; i < lines; i++) {
+                    printf("%s",text[i]);
                 }}
     } else {
-        printf("just read from stdin\n");
-        while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
-        {
+            //printf("just read from stdin\n");
+            while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
+             {
             //input[i] = (char*) malloc(MAX_CHAR);
             //input =  realloc(input, strlen(input)+1+strlen(buffer));
             //input[i] = buffer
             input[i++] = strdup(buffer);
             linecnt++;
-        }
+             }
+        
         if(rflag==1) {
-        qsort(input,linecnt,sizeof(char*),cmpstrRev);
-    }else {
-        qsort(input,linecnt,sizeof(char*),cmpstr);
-    }
+             qsort(input,linecnt,sizeof(char*),cmpstrRev);
+        }  else {
+             qsort(input,linecnt,sizeof(char*),cmpstr);
+        }
+        
         if(nlines != -1) {
+                if(nlines > linecnt) {
+                fprintf(stderr,"Invalid number of lines.\n");
+                return -1;
+            }
         for(i = 0; i < nlines; i++) {
-            printf("[%d]: %s",i,input[i]);
-        } }
-        else {
+            printf("%s",input[i]);
+        } } else {
             for(i = 0; i < linecnt; i++) {
-            printf("[%d]: %s",i,input[i]);
-        }
-
+            printf("%s",input[i]);
+            }
         }
     }
-    //}
-    printf("optind: %s\n", argv[optind]);
-    printf("optarg: %s\n", optarg);
+    //printf("optind: %s\n", argv[optind]);
+    //printf("optarg: %s\n", optarg);
     return 0;
 }
