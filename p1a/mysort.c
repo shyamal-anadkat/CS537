@@ -117,8 +117,7 @@ int main(int argc, char** argv)
                     fprintf(stderr,"Error opening file.\n");
                     return -1;
                 }
-                int lines = numLines(fp);
-                
+                int lines = numLines(fp);                
                 char **text = malloc(sizeof(char *) * lines);
                 
                 //reset file pointer 
@@ -126,7 +125,7 @@ int main(int argc, char** argv)
                 
                 text = readFile(fp, text);
                 
-                if(rflag == 1) {
+              if(rflag == 1) {
                 qsort(text, lines, sizeof(char*),cmpstrRev);
             } else {
                 qsort(text, lines, sizeof(char*),cmpstr);
@@ -147,13 +146,15 @@ int main(int argc, char** argv)
             
             while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
             {
+	    input = realloc(input, (i+1)* sizeof(*input));
             input[i] = malloc(strlen(buffer)+1);
             strcpy(input[i], buffer);
             i++;
-            linecnt++;
+	    linecnt++;
             }
-        //free(input);
-        if(rflag==1) {
+         //free(input);
+        
+	   if(rflag==1) {
              qsort(input,linecnt,sizeof(char*),cmpstrRev);
         }  else {
 
@@ -173,6 +174,8 @@ int main(int argc, char** argv)
             }
         }
     }
+    free(input);
+    free(text); 
     //printf("optind: %s\n", argv[optind]);
     //printf("optarg: %s\n", optarg);
     return 0;
