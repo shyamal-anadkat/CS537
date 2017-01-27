@@ -3,6 +3,6 @@
 #include "stat.h"
 
 int main(void){
-	  printf(1,"Fork Count: %d \n", getforkcount());
+	  printf(1,"%d \n", getforkcount());
 	  exit();
 }

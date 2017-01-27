@@ -1,3 +1,7 @@
+/*
+* CS537 P1a
+* Author: Shyamal H Anadkat
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -14,7 +18,6 @@ static int numLines(FILE *f);
 static char** readFile(FILE *in, char** data);
 static int cmpstr(const void* a, const void* b);
 static int cmpstrRev(const void* a, const void* b);
-
 
 //prints out usage 
 void usage(char *prog)
@@ -112,6 +115,11 @@ int main(int argc, char** argv)
 
     if(argv[optind] != NULL) {
 
+                //validating 2 args 
+                if(argv[optind+1] != NULL) {
+                    fprintf(stderr,"Expecting a single file argument.\n");
+                    exit(EXIT_FAILURE);
+                }
                 FILE *fp = fopen(argv[optind],"r");
                 if(fp == NULL) {
                     fprintf(stderr,"Error opening file.\n");
@@ -142,22 +150,20 @@ int main(int argc, char** argv)
                     for(i = 0; i < lines; i++) {
                     printf("%s",text[i]);
                 }}
+        free(text); 
     } else {
-            
             while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
             {
-	    input = realloc(input, (i+1)* sizeof(*input));
+            input = realloc(input, (i+1)* sizeof(*input));
             input[i] = malloc(strlen(buffer)+1);
             strcpy(input[i], buffer);
             i++;
-	    linecnt++;
+            linecnt++;
             }
-         //free(input);
-        
-	   if(rflag==1) {
+
+       if(rflag==1) {
              qsort(input,linecnt,sizeof(char*),cmpstrRev);
         }  else {
-
              qsort(input,linecnt,sizeof(char*),cmpstr);
         }
         
@@ -174,9 +180,6 @@ int main(int argc, char** argv)
             }
         }
     }
-    free(input);
-    free(text); 
-    //printf("optind: %s\n", argv[optind]);
-    //printf("optarg: %s\n", optarg);
+    free(input); 
     return 0;
 }
