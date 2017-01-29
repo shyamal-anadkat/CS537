@@ -6,7 +6,7 @@
 #include "proc.h"
 #include "sysfunc.h"
 
-int forkcnt;
+int forkcnt = 0;
 
 int
 sys_fork(void)

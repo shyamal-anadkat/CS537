@@ -150,6 +150,9 @@ int main(int argc, char** argv)
                     for(i = 0; i < lines; i++) {
                     printf("%s",text[i]);
                 }}
+    for(i = 0; i < lines; i++) {
+            free(text[i]);
+    }
         free(text); 
     } else {
             while(fgets(buffer, MAX_CHAR, stdin)!= NULL)
@@ -179,6 +182,9 @@ int main(int argc, char** argv)
             printf("%s",input[i]);
             }
         }
+    }
+    for(i = 0; i < linecnt; i++) {
+            free(input[i]);
     }
     free(input); 
     return 0;
