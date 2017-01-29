@@ -132,6 +132,8 @@ int main(int argc, char** argv)
                 lseek(fileno(fp), 0, SEEK_SET);
                 
                 text = readFile(fp, text);
+
+		fclose(fp);
                 
               if(rflag == 1) {
                 qsort(text, lines, sizeof(char*),cmpstrRev);
