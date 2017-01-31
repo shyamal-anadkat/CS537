@@ -14,6 +14,7 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+int numforks = 0;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -156,6 +157,9 @@ fork(void)
   pid = np->pid;
   np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
+  
+  numforks++;
+  
   return pid;
 }
 

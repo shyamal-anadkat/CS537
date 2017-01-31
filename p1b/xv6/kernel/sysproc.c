@@ -6,12 +6,11 @@
 #include "proc.h"
 #include "sysfunc.h"
 
-int forkcnt = 0;
+extern int numforks;
 
 int
 sys_fork(void)
 {
-  forkcnt++;
   return fork();
 }
 
@@ -96,5 +95,5 @@ sys_uptime(void)
 int
 sys_getforkcount(void)
 {
-  return forkcnt;
+  return numforks;
 }
