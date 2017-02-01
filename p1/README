@@ -1,12 +1,4 @@
-CS537 Project 1
+CS537 Projects
 Author: Shyamal H Anadkat 
--------------------------------------------------------------------------------
-:: linux :: 
-- I have tried to handle all possible invalid inputs/errors with -1 exit status/EXIT_FAILURE.
-- It was really important to use valgrind in order to analyze memory leaks in my program due to strdup() and mallocs. 
-  The tool helped me to free huge chunks of memory in order to prevent leaks. 
-- I wrote a function that reads a file and determines the number of lines in one pass. This helps to alloc memory for storing the unsorted input. 
+-------------------------
 
-:: xv6 ::
-- getforkcount works as intended and prints out number of forks since boot up in stdout. 
-- one thing that I struggled with was making sense of each and every piece of code in xv6.
