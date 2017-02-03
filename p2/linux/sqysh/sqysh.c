@@ -8,10 +8,46 @@
 #define MAX_ARGS 256
 
 const char PROMPT[] = "sqysh$ ";
-const char ERROR[] = "error occured.";
-const char FILE_ERROR[] = "file cannot be read.";
+const char ERROR[] = "error occured.\n";
+const char FILE_ERROR[] = "file cannot be read.\n";
+
 int batch_flag = 0; 
 FILE *stream = NULL;
+int n = 0, i; 
+
+//parses command 
+char** parseCmd (char* in) {
+		char *ret; 
+
+		//trim leading space 
+		while(isspace((unsigned char)*in)) in++;
+
+		//all spaces 
+		if(*in == 0) {
+
+		}
+
+		//trim trailing space 
+		ret = in + strlen(in) - 1; 
+		while(ret > in && isspace((unsigned char)*ret)) ret--; 
+		*(ret+1) = 0; 
+
+		char *p = strtok(in, " ");
+		char **res = NULL;
+		while(p) {
+			res = realloc(res, sizeof(char*) * ++n);
+			if(res == NULL) {
+				exit(EXIT_FAILURE); //memalloc fail 
+			}
+			res[n-1] = p; 
+			p = strtok(NULL, " ");
+		}
+
+		res = realloc (res, sizeof(char*) * (n+1));
+		res[n] = 0; 
+		return res; 
+	}
+
 
 int main(int argc, char** argv)
 {
@@ -34,13 +70,36 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	while(1) {
+
+	INTERACTIVE_START: while(1) {
 		if(!batch_flag) {
 			write (STDOUT_FILENO, PROMPT, strlen(PROMPT));
 		}
 		 char buffer[MAX_ARGS];
 		 if (fgets(buffer, MAX_ARGS, stdin)!= NULL) {
-		 		printf("%s",buffer);
+		 	if(strlen(buffer) == 0) {
+		 		goto INTERACTIVE_START;
+		 	}
+		 	char **cmds = parseCmd(buffer);
+		 	for (i = 0; i < n; ++i) {
+		 		printf ("cmds[%d] = %s\n", i, cmds[i]);
+		 	}
+		 	n = 0;
+
+
+
+
+
+
+
+
+
+
+		 	free(cmds); //TODO free whole 
+
+		 } else {
+		 			write (STDERR_FILENO, ERROR, strlen(ERROR));
+					exit(EXIT_FAILURE);
 		 }
 	}
 	return 0;
