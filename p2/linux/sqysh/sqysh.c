@@ -4,20 +4,34 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #define MAX_ARGS 256
 
 const char PROMPT[] = "sqysh$ ";
-const char ERROR[] = "error occured.\n";
+const char ERROR[] = "Error occured.\n";
+const char ERROR_SPECIAL[] = "Error: invalid special syntax.\n";
 const char FILE_ERROR[] = "file cannot be read.\n";
+const char SPECIAL_ARG_ERROR[] = "Error: too many args. \n";
 
-char **cmds = NULL;
+
+typedef struct {
+	char *in_file; 
+	char *out_file;
+	int is_background;
+	char **arg; 
+	int arglen; 
+	int is_special;
+	int is_built_in;  
+} Cmd; 
+
 char buffer[MAX_ARGS];
 int batch_flag = 0; 
 FILE *stream = NULL;
 int n = 0, i; 
 int internal_cmd = 0; 
 int external_cmd = 0; 
+char *cmd = NULL; 
 
 
 //init before loop
@@ -26,10 +40,28 @@ void init() {
 	external_cmd = 0; 
 }
 
+void cleanup(Cmd *in) {
+	int i; 
+	for (i=0; i < in->arglen; i++){
+        free(in->arg[i]);
+    }
+    free(in->in_file);
+    free(in->out_file);
+}
+
+
 //parses command 
-char** parseCmd (char* in) {
-		n = 0; 
+int parseCmd (char* in, Cmd *cmd) {
+		n = 0;
+		int i;  
 		char *ret; 
+		cmd->in_file = NULL; 
+		cmd->is_background = 0; 
+		cmd->out_file = NULL;
+		cmd->arg = NULL;
+		cmd->arglen = 0; 
+		cmd->is_special = 0;
+		cmd->is_built_in = 0;  
 
 		//trim leading space 
 		while(isspace((unsigned char)*in)) in++;
@@ -39,40 +71,141 @@ char** parseCmd (char* in) {
 		while(ret > in && isspace((unsigned char)*ret)) ret--; 
 		*(ret+1) = 0; 
         
-        if(strlen(in) == 0) {
-        	return NULL; 
+        if(strlen(in) == 0 || in == NULL) {
+        	return 1; 
         }
 		//split line based on whitespace delimit
 		char *p = strtok(in, " ");
 		char **res = NULL;
 		while(p) {
-			res = realloc(res, sizeof(char*) * ++n);
+			++n; 
+			cmd->arg = realloc(cmd->arg, sizeof(char*) * n);
+			res = realloc(res, sizeof(char*) * n);
 			if(res == NULL) {
 				exit(EXIT_FAILURE); //memalloc fail 
 			}
 			res[n-1] = p; 
+			cmd->arg[n-1] = res[n-1]; 
 			p = strtok(NULL, " ");
 		}
 
-		//res = realloc (res, sizeof(char*) * (n+1));
-		//res[n] = 0; 
-		return res; 
+		res = realloc (res, sizeof (char*) * (n+1));
+		res[n] = 0;
+		cmd->arg = realloc (cmd->arg, sizeof (char*) * (n+1));
+		cmd->arg[n] = 0;
+
+		int numArgs = n; 
+		cmd->arglen = n; 
+
+		//check for builtins
+		if(strcmp(res[0], "cd") == 0 || strcmp(res[0], "exit") == 0 || 
+			strcmp(res[0], "pwd") == 0 || strcmp(res[0], "clear") == 0 ){ 
+			cmd->is_built_in = 1; 
+		} 
+
+
+		//can't start with < , >, & 
+		 if(str_equal(res[0], "<") || str_equal(res[0], ">") || str_equal(res[0], "&")
+		  || str_equal(res[numArgs-1], ">") || str_equal(res[numArgs-1], "<") ) {
+		 	write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+		 	return 1;
+		 }
+
+		int cnt1 = 0; 
+		int cnt2 = 0;  
+		for(i = 1; i < numArgs-1; i++) {
+
+			if(!strcmp(res[i], "<")) {
+				cnt1++;
+				if(cnt1>1) {
+					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+				return 1; 
+				}
+				if(res[i+1] != NULL) {
+					if(res[i+2] != NULL) {
+						write (STDERR_FILENO, SPECIAL_ARG_ERROR, strlen(SPECIAL_ARG_ERROR));
+						return 1; 
+					}
+				} else {
+					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+					return 1; 
+				}
+
+			} else if (!strcmp(res[i], ">")) {
+				cmd->is_special = 1; 
+				cnt2++; 
+				if(cnt2>1) {
+					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+				return 1; 
+				}
+				if(res[i+1] != NULL) {
+					if(res[i+2] != NULL) {
+						write (STDERR_FILENO, SPECIAL_ARG_ERROR, strlen(SPECIAL_ARG_ERROR));
+						return 1; 
+					}
+					cmd->out_file = res[++i];
+				} else {
+					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+					return 1; 
+				}
+
+			} else if(!strcmp(res[i], "&")) {
+				write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
+				return 1; 
+			}
+		}
+
+		if(!strcmp(res[numArgs-1], "&")) {
+			cmd->is_background = 1; 
+		}
+		
+    	free(res); 
+		return 0; 
 	}
+
+//checks if two strings are equal 
+int str_equal(char *s1, char *s2){
+    if (!strcmp(s1, s2)){
+        return 1;
+    }
+    return 0;
+}
+
+int start_process(char **cmds) {
+
+	int par_state; 
+	pid_t pid, wait_pid; 
+
+	pid = fork(); 
+
+	if(pid==0) { //child
+		if(execvp(cmds[0], cmds) < 0) {
+			write (STDERR_FILENO, ERROR, strlen(ERROR));
+		}
+		exit(EXIT_FAILURE);
+	} else if (pid < 0) {
+		write (STDERR_FILENO, ERROR, strlen(ERROR));
+	} else {
+		do {
+			wait_pid = waitpid (pid, &par_state, WUNTRACED);
+		} while(!WIFEXITED(par_state) && !WIFSIGNALED(par_state));
+	}
+	return 0; 
+}
+
 
 
 int main(int argc, char** argv)
 {
 	if(isatty (fileno(stdin)) && argc==1) {
-		//stream = stdin; 
-		//write (STDOUT_FILENO, PROMPT, strlen(PROMPT));
-	} else if(argc==2) {
+		stream = stdin; 
+	} else if (argc==2) {
 		stream = fopen(argv[1], "r");
 		batch_flag = 1; 
 		if(stream==NULL) {
 			write (STDERR_FILENO, FILE_ERROR, strlen(FILE_ERROR));
 			exit(EXIT_FAILURE);
 		}
-		dup2(fileno(stream), STDIN_FILENO); //re-direct to stdin
 
 	} else {
 		write (STDERR_FILENO, ERROR, strlen(ERROR));
@@ -82,26 +215,25 @@ int main(int argc, char** argv)
 
 	INTERACTIVE_START: while(1) {
 		init();
-
+		Cmd cmd;
 		if(!batch_flag) {
 			write (STDOUT_FILENO, PROMPT, strlen(PROMPT));
 		}
 
-		 if (fgets(buffer, MAX_ARGS, stdin)!= NULL) {
+		 if (fgets(buffer, MAX_ARGS, stream)!= NULL) {
 
 		 	if(strlen(buffer) == 0) {
 		 		goto INTERACTIVE_START;
 		 	}
-		 	cmds = parseCmd(buffer);
 
-		 	if(cmds==NULL) {
+		 	if(parseCmd(buffer, &cmd)) {
 		 		goto INTERACTIVE_START;
 		 	}
 
 		 //**handling all internal commmands**//
-
+		 if(cmd.is_built_in) {
 		 //CD 
-		 if (strcmp(cmds[0], "cd") == 0) {
+		 if (strcmp(cmd.arg[0], "cd") == 0) {
 		 	internal_cmd = 1;
 		 	int chd; 
 		 	if (n>2) {
@@ -115,16 +247,27 @@ int main(int argc, char** argv)
 		 			continue;
 		 		}
 		 	} else if (n==2) {
-		 			chd = chdir(cmds[n-1]);
+		 			chd = chdir(cmd.arg[n-1]);
 		 			if (chd != 0) {
-		 			fprintf(stderr, "cd: %s: %s\n", cmds[n-1], strerror(errno));
+		 			fprintf(stderr, "cd: %s: %s\n", cmd.arg[n-1], strerror(errno));
 		 			goto INTERACTIVE_START;
 		 		}
 		 	}  
 		 }
 
+		 //CLEAR
+		  if (strcmp(cmd.arg[0], "clear") == 0) {
+		 	internal_cmd = 1;
+		 	if (n>2) {
+		 		fprintf(stderr, "%s : too many arguments\n", cmd.arg[0]);
+		 		goto INTERACTIVE_START;
+		 	}
+		 	system("clear");
+		 	goto INTERACTIVE_START;
+		 }
+
 		 //EXIT
-		  if (strcmp(cmds[0], "exit") == 0) {
+		  if (strcmp(cmd.arg[0], "exit") == 0) {
 		  	internal_cmd = 1;
 		  	if (n != 1) {
 		  		fprintf(stderr, "exit: too many arguments\n");
@@ -135,7 +278,7 @@ int main(int argc, char** argv)
 		  }
 
 		  //PWD
-		  if (strcmp(cmds[0], "pwd") == 0) {
+		  if (strcmp(cmd.arg[0], "pwd") == 0) {
 		  	internal_cmd = 1;
 		  	if (n != 1) {
 		  		fprintf(stderr, "pwd: too many arguments\n");
@@ -151,9 +294,9 @@ int main(int argc, char** argv)
 		 		}
 		 	}
 		  }
-
-		 if(!internal_cmd) {
-		 	fprintf(stderr, "%s: command not supported.\n", cmds[0]);
+		} 
+		 if(!cmd.is_built_in && start_process(cmd.arg)) {
+		 	fprintf(stderr, "%s: command not supported.\n", cmd.arg[0]);
 		 	continue; 
 		 }
 		 } else {
@@ -161,6 +304,7 @@ int main(int argc, char** argv)
 				continue;
 		 }
 	}
-	//free(cmds); //TODO free whole 
+
+	cleanup(&cmd); 
 	return 0;
 }
