@@ -15,14 +15,19 @@ sys_fork(void)
 int
 sys_exit(void)
 {
-  exit(proc->exit_status);
-  return 0;  // not reached
+  int st = proc->exit_status;
+  if(argint(0,&st) < 0) 
+	return -1;
+  exit(st);
+  return 0;   
 }
 
 int
-sys_wait(int *status)
+sys_wait(void)
 {
-  return wait(status);
+  if(argint(0,&proc->exit_status) < 0) 
+	return -1; 
+  return wait(&proc->exit_status);
 }
 
 int

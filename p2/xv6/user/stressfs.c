@@ -14,7 +14,7 @@
 int
 main(int argc, char *argv[])
 {
-  int fd, i;
+  int fd, i, status;
   char path[] = "stressfs0";
 
   printf(1, "stressfs starting\n");
@@ -31,7 +31,7 @@ main(int argc, char *argv[])
     printf(fd, "%d\n", i);
   close(fd);
 
-  wait();
+  wait(&status);
   
-  exit();
+  exit(0);
 }

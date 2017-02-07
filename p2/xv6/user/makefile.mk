@@ -15,7 +15,9 @@ USER_PROGS := \
 	stressfs\
 	tester\
 	wc\
-	zombie
+	zombie\
+	true\
+	false
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
