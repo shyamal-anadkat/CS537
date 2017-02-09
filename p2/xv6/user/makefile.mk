@@ -17,7 +17,8 @@ USER_PROGS := \
 	wc\
 	zombie\
 	true\
-	false
+	false\
+	_start\
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
@@ -71,7 +72,7 @@ USER_LDFLAGS += -nostdlib
 USER_LDFLAGS += --omagic
 
 # where program execution should begin
-USER_LDFLAGS += --entry=main
+USER_LDFLAGS += --entry=_start
 
 # location in memory where the program will be loaded
 USER_LDFLAGS += --section-start=.text=0x0
