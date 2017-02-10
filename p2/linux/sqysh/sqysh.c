@@ -16,6 +16,7 @@
 
 #define MAX_ARGS 256
 
+int str_equal(char *s1, char *s2);
 
 const char PROMPT[] = "sqysh$ ";
 const char ERROR[] = "Error occured.\n";
@@ -34,7 +35,6 @@ typedef struct {
 	int is_built_in;  
 	pid_t pid; 
 	int status; 
-
 } Cmd; 
 
 char buffer[MAX_ARGS];
@@ -50,15 +50,6 @@ char *cmd = NULL;
 void init() {
 	internal_cmd = 0; 
 	external_cmd = 0; 
-}
-
-void cleanup(Cmd *in) {
-	int i; 
-	for (i=0; i < in->arglen; i++){
-        free(in->arg[i]);
-    }
-    free(in->in_file);
-    free(in->out_file);
 }
 
 
@@ -117,6 +108,7 @@ int parseCmd (char* in, Cmd *cmd) {
 		int numArgs = n; 
 		cmd->arglen = n; 
 
+
 		//check for builtins
 		if(strcmp(res[0], "cd") == 0 || strcmp(res[0], "exit") == 0 || 
 			strcmp(res[0], "pwd") == 0 || strcmp(res[0], "clear") == 0 ){ 
@@ -132,7 +124,7 @@ int parseCmd (char* in, Cmd *cmd) {
 
 		int cnt1 = 0; 
 		int cnt2 = 0;  
-		for(i = 1; i < numArgs-1; i++) {
+		for(i = 1; i < numArgs; i++) {
 
 			if(!strcmp(res[i], "<")) {
 				cnt1++;
@@ -146,7 +138,6 @@ int parseCmd (char* in, Cmd *cmd) {
 						return 1; 
 					}*/
 					cmd->in_file = res[i+1];
-					//printf("%s: < in detected", res[i+1]);
 				} else {
 					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
 					return 1; 
@@ -164,17 +155,13 @@ int parseCmd (char* in, Cmd *cmd) {
 						write (STDERR_FILENO, SPECIAL_ARG_ERROR, strlen(SPECIAL_ARG_ERROR));
 						return 1; 
 					}*/
-					//printf("%s: > out detected", res[i+1]);
 					cmd->out_file = res[i+1];
 				} else {
 					write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
 					return 1; 
 				}
 
-			} else if(!strcmp(res[i], "&")) {
-				write (STDERR_FILENO, ERROR_SPECIAL, strlen(ERROR_SPECIAL));
-				return 1; 
-			}
+			} 
 		}
 
 		//Check for background execution 
@@ -191,31 +178,43 @@ int parseCmd (char* in, Cmd *cmd) {
 
 //manage redirection [ >, < ] 
 void redirHandler(Cmd cmd) {
-	int fd; 
+	int fd1,fd2; 
 	pid_t pid; 
+	char **parsd = NULL;
 
-	pid = fork(); 
-
-	if (pid  == -1) {
-		write (STDERR_FILENO, ERROR, strlen(ERROR));
-		return 1;
-	} 
-	if (pid == 0) {
-		if(cmd.out_file != NULL && cmd.in_file == NULL) {
-			fd = open (cmd.out_file, O_CREAT | O_TRUNC | O_WRONLY, 0600);
-			dup2(fd, STDOUT_FILENO);
-			close(fd);
-		} else if (cmd.out_file != NULL && cmd.in_file !=NULL) {
-			fd = open(cmd.in_file, O_RDONLY, 0600);  
-			dup2(fd, STDIN_FILENO);
-			close(fd);
-
-			fd = open (cmd.out_file, O_CREAT | O_TRUNC | O_WRONLY, 0600);
-			dup2(fd, STDOUT_FILENO);
-			close(fd);
+	for(i = 0; i < cmd.arglen; i++) {
+			parsd = realloc(parsd, sizeof(char*) * (i+1));
+			if(parsd == NULL) {
+				exit(EXIT_FAILURE); //memalloc fail 
+			}
+			if((strcmp(cmd.arg[i], "<" ) != 0) && (strcmp(cmd.arg[i], ">") != 0)) {
+					parsd[i] = cmd.arg[i]; 
+			} 
 		}
+		
+	if ((pid = fork()) < 0) {
+		write (STDERR_FILENO, ERROR, strlen(ERROR));
+	} 
 
-		if(execvp(cmd.arg[0], cmd.arg) == -1) {
+	else if (pid == 0) {
+			if(cmd.out_file != NULL && cmd.in_file == NULL) {
+			fd1 = open (cmd.out_file, O_CREAT | O_TRUNC | O_WRONLY,0644);
+			dup2(fd1, STDOUT_FILENO);
+			close(fd1);
+		} else if (cmd.out_file != NULL && cmd.in_file !=NULL) {
+			fd1 = open(cmd.in_file, O_RDONLY);  
+			dup2(fd1, STDIN_FILENO);
+			close(fd1);
+
+			fd2 = open (cmd.out_file, O_CREAT | O_TRUNC | O_WRONLY,0644);
+			dup2(fd2, STDOUT_FILENO);
+			close(fd2);
+		} else if (cmd.out_file == NULL && cmd.in_file !=NULL) {
+			fd1 = open(cmd.in_file, O_RDONLY);  
+			dup2(fd1, STDIN_FILENO);
+			close(fd1);
+		}
+		if(execvp(parsd[0], parsd) == -1) {
 			write (STDERR_FILENO, ERROR, strlen(ERROR));
 		}
 
@@ -224,6 +223,7 @@ void redirHandler(Cmd cmd) {
 		waitpid(pid, NULL, 0);
 	}
 }
+
 
 //checks if two strings are equal 
 int str_equal(char *s1, char *s2){
@@ -237,7 +237,7 @@ int str_equal(char *s1, char *s2){
 int start_prog(Cmd cmd, char **cmds, int is_background, int arglen) {
 
 	int par_state; 
-	pid_t pid, wait_pid; 
+	pid_t pid; 
 
 	pid = fork(); 
 	cmd.pid = pid; 
@@ -255,7 +255,7 @@ int start_prog(Cmd cmd, char **cmds, int is_background, int arglen) {
 
 	} else if(!is_background) {
 		do { //parent to wait for child 
-			wait_pid = waitpid (pid, &par_state, WUNTRACED);
+			waitpid (pid, &par_state, WUNTRACED);
 		} while(!WIFEXITED(par_state) && !WIFSIGNALED(par_state));
 	}
 	return 0; 
@@ -283,8 +283,6 @@ int main(int argc, char** argv)
 
 	INTERACTIVE_START: while(1) {
 		init();
-
-
 		Cmd cmd;
 		if(!batch_flag) {
 			write (STDOUT_FILENO, PROMPT, strlen(PROMPT));
@@ -377,8 +375,8 @@ int main(int argc, char** argv)
 				continue;
 		 }
 
+		//free(&cmd); 
 	}
 
-	cleanup(&cmd); 
 	return 0;
 }
