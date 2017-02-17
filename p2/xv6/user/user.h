@@ -26,9 +26,10 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
-void _start(int argc,char* argv[]);
+
 
 // user library functions (ulib.c)
+void _start(int argc,char* argv[]);
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);
 void *memmove(void*, void*, int);

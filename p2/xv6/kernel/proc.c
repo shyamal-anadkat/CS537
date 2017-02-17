@@ -221,10 +221,7 @@ wait(int *status)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
-
-	if(status != 0) {
-	  *status = p->exit_status;
-        }
+	     *status = p->exit_status;
         // Found one.
         pid = p->pid;
         kfree(p->kstack);

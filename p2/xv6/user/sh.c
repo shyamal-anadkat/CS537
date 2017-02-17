@@ -147,7 +147,7 @@ int
 main(void)
 {
   static char buf[100];
-  int fd, status;
+  int fd, status, pid;
   
   // Assumes three file descriptors open.
   while((fd = open("console", O_RDWR)) >= 0){
@@ -169,7 +169,11 @@ main(void)
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
-    wait(&status);
+
+    pid = wait(&status);
+    if(status) {
+      printf(2,"[pid %d exited with status %d]\n", pid, status);
+	   }
   }
   exit(0);
 }

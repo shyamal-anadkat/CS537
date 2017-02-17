@@ -8,10 +8,8 @@ extern int main (int argc,char* argv[]);
 
 void 
 _start(int argc,char* argv[]) {
-	int retVal;
-	retVal = main(argc,argv);
-	exit(retVal);
-	return;
+  exit(main(argc,argv));
+  return;
 }
 
 char*

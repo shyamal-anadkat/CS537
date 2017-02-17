@@ -16,8 +16,7 @@ int
 sys_exit(void)
 {
   int st;
-  if(argint(0,&st) < 0) 
-	return -1;
+  argint(0,&st);
   exit(st);
   return 0; //it will not reach here    
 }
@@ -26,9 +25,8 @@ int
 sys_wait(void)
 {
   int stat;
-  if(argint(0,&stat) < 0) 
-	return -1; 
-  return wait(&stat);
+  argint(0,&stat);
+  return wait((int *)stat);
 }
 
 int
