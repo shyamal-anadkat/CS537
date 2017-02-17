@@ -71,6 +71,7 @@ void init_cmd (Cmd *cmd) {
   cmd->in_file = NULL;
   cmd->is_background = 0;
   cmd->out_file = NULL;
+  //free(cmd->arg);
   cmd->arg = NULL;
   cmd->arglen = 0;
   cmd->is_special = 0;
@@ -100,11 +101,12 @@ int parseCmd (char* in, Cmd *cmd) {
   }
   //split line based on whitespace delimit
   char *p = strtok(in, " ");
-  char **res = NULL;
+  char **res = malloc(sizeof(char*) * MAX_ARGS);
+  cmd->arg = malloc(sizeof(char*) * MAX_ARGS);
   while (p) {
     ++n;
-    cmd->arg = realloc(cmd->arg, sizeof(char*) * n);
-    res = realloc(res, sizeof(char*) * n);
+    //cmd->arg = realloc(cmd->arg, sizeof(char*) * n);
+    //res = realloc(res, sizeof(char*) * n);
     if (res == NULL) {
       exit(EXIT_FAILURE); //memalloc fail
     }
@@ -113,9 +115,9 @@ int parseCmd (char* in, Cmd *cmd) {
     p = strtok(NULL, " ");
   }
 
-  res = realloc (res, sizeof (char*) * (n + 1));
+  //res = realloc (res, sizeof (char*) * (n + 1));
   res[n] = 0;
-  cmd->arg = realloc (cmd->arg, sizeof (char*) * (n + 1));
+  //cmd->arg = realloc (cmd->arg, sizeof (char*) * (n + 1));
   cmd->arg[n] = 0;
 
   int numArgs = n;
@@ -148,10 +150,6 @@ int parseCmd (char* in, Cmd *cmd) {
         return 1;
       }
       if (res[i + 1] != NULL) {
-        /*          if(res[i+5] != NULL) {
-                    write (STDERR_FILENO, SPECIAL_ARG_ERROR, strlen(SPECIAL_ARG_ERROR));
-                    return 1;
-                  }*/
         tmp1 = i;
         cmd->in_file = res[i + 1];
       } else {
@@ -167,10 +165,6 @@ int parseCmd (char* in, Cmd *cmd) {
         return 1;
       }
       if (res[i + 1] != NULL) {
-        /*          if(res[i+5] != NULL) {
-                    write (STDERR_FILENO, SPECIAL_ARG_ERROR, strlen(SPECIAL_ARG_ERROR));
-                    return 1;
-                  }*/
         tmp2 = i;
         cmd->out_file = res[i + 1];
       } else {
@@ -209,18 +203,20 @@ int parseCmd (char* in, Cmd *cmd) {
 void redirHandler(Cmd cmd, bg_process **bgp) {
   int fd1, fd2;
   pid_t pid;
-  char **parsd = NULL;
-  parsd = malloc(sizeof(char*) * (cmd.redir_indx + 1));
-  //for(i = 0; i < cmd.arglen; i++) {
+  char **parsd;
+  //parsd = malloc(sizeof(char*) * (cmd.redir_indx + 1));
+  parsd = malloc(sizeof(char*) * MAX_ARGS);
   int i = 0;
-  for (i = 0; i < (cmd.redir_indx - 1); i++) {
-    parsd[i] = cmd.arg[i];
+  for (i = 0; i < (cmd.redir_indx); i++) {
+    parsd[i] = malloc(sizeof(char*) * MAX_ARGS);
+    strcpy(parsd[i],cmd.arg[i]);
+    //parsd[i] = cmd.arg[i];
   }
   if (cmd.redir_indx == 1) {
     parsd[0] = cmd.arg[0];
     parsd[1] = NULL;
   } else {
-    parsd[i + 1] = NULL;
+    parsd[i] = NULL;
   }
 
 
@@ -228,7 +224,6 @@ void redirHandler(Cmd cmd, bg_process **bgp) {
     fprintf(stderr, "%s: %s\n", cmd.arg[0], strerror(errno));
     exit(EXIT_FAILURE);
   }
-
 
   if (cmd.is_background == 1) {
     if (numBg >= MAX_ARGS) {
@@ -276,6 +271,8 @@ void redirHandler(Cmd cmd, bg_process **bgp) {
   if (!cmd.is_background) {
     waitpid(pid, NULL, 0);
   }
+
+  free(parsd);
 }
 
 //checks if two strings are equal
@@ -309,8 +306,8 @@ int start_prog(Cmd cmd, char **cmds, int is_background, int arglen, bg_process *
 
   if (pid == 0) { //child
     if (execvp(cmds[0], cmds) < 0) {
-      fprintf(stderr, "%s: %s\n", cmds[0], strerror(errno));
-      exit(EXIT_FAILURE); //exit from child
+       fprintf(stderr, "%s: %s\n", cmds[0], strerror(errno));
+       exit(EXIT_FAILURE); //exit from child
     }
   } else if (pid == -1) {
     write (STDERR_FILENO, ERROR, strlen(ERROR));
@@ -341,6 +338,12 @@ void bg_status_hndler(bg_process** bgp, int numbg) {
     }
   }
   return;
+}
+
+int getSize (char *in[]) {
+    int count = 0;
+    while (in[count] != NULL) count++;
+    return count;
 }
 
 
@@ -463,8 +466,18 @@ INTERACTIVE_START: while (1) {
         continue;
       }
 
+      free(cmd.arg);
+
     } else {
+      int j;
+
+      for(j = 0 ; j < numBg; j++) {
+      free(bgp[j]);
+        }
+      free(bgp);
+      //free(cmd.arg);
       exit(EXIT_FAILURE);
+
     }
 
   }

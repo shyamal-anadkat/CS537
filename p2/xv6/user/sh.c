@@ -79,6 +79,7 @@ runcmd(struct cmd *cmd)
       exit(0);
     exec(ecmd->argv[0], ecmd->argv);
     printf(2, "exec %s failed\n", ecmd->argv[0]);
+    exit(1);
     break;
 
   case REDIR:
@@ -182,7 +183,7 @@ void
 panic(char *s)
 {
   printf(2, "%s\n", s);
-  exit(0);
+  exit(1);
 }
 
 int
