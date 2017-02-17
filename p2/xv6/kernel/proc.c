@@ -169,10 +169,7 @@ exit(int status)
   int fd;
 
   if(proc == initproc)
-    panic("init exiting");
-
-  //status 
-  proc->exit_status = status; 
+    panic("init exiting"); 
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -201,6 +198,8 @@ exit(int status)
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
+  proc->exit_status = status;  
+
   sched();
   panic("zombie exit");
 }

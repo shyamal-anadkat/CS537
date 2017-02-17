@@ -4,6 +4,16 @@
 #include "user.h"
 #include "x86.h"
 
+extern int main (int argc,char* argv[]);
+
+void 
+_start(int argc,char* argv[]) {
+	int retVal;
+	retVal = main(argc,argv);
+	exit(retVal);
+	return;
+}
+
 char*
 strcpy(char *s, char *t)
 {
