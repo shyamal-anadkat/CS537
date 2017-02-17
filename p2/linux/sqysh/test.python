@@ -1,0 +1,12 @@
+'''
+    This is OS, not DB - so why do we have to test big and stupid files?
+'''
+
+file = open("RIP_my_OS_grade.bash", 'w')
+
+f_this = range(0, 5000000)
+
+for this_is_stupid in f_this:
+    file.write("echo {}\n".format(str(this_is_stupid)))
+
+file.close()
