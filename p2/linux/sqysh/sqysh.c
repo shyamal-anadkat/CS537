@@ -60,7 +60,6 @@ int numBg;
 
 int is_interactive = 0; 
 
-
 //init before loop
 void init() {
   internal_cmd = 0;
@@ -68,7 +67,7 @@ void init() {
   //isbg = 0;
 }
 
-
+//called before each command
 void init_cmd (Cmd *cmd) {
   //init cmd params for new command
   cmd->in_file = NULL;
@@ -80,7 +79,6 @@ void init_cmd (Cmd *cmd) {
   cmd->is_built_in = 0;
   cmd->redir_indx = -1;
 }
-
 
 //parses command
 int parseCmd (char* in, Cmd* cmd) {
@@ -103,7 +101,7 @@ int parseCmd (char* in, Cmd* cmd) {
   }
   //split line based on whitespace delimit
   char *p = strtok(in, " ");
-  cmd->arg = malloc(sizeof(char*) * MAX_ARGS);
+  //cmd->arg = malloc(sizeof(char*) * MAX_ARGS);
   
   while (p) {
     ++n;
@@ -167,7 +165,6 @@ int parseCmd (char* in, Cmd* cmd) {
     }
   }
 
-
   //get index of final arg in redir_cmd_arg, helps saves parsing again
   if (tmp1 > -1 ||  tmp2 > -1) {
     if (tmp1 == -1) {
@@ -195,21 +192,22 @@ void redirHandler(Cmd cmd, bg_process *bgp) {
   int fd1, fd2;
   pid_t pid;
   char **parsd;
-  int ps;
 
   parsd = malloc(sizeof(char*) * MAX_ARGS);
   int i = 0;
   for (i = 0; i < (cmd.redir_indx); i++) {
-    parsd[i] = malloc(sizeof(char*) * MAX_ARGS);
-    strcpy(parsd[i],cmd.arg[i]);
+    //parsd[i] = malloc(sizeof(char*) * MAX_ARGS);
+    // strcpy(parsd[i],cmd.arg[i]);
+    parsd[i] = cmd.arg[i];
   }
   if (cmd.redir_indx == 1) {
+    // strcpy(parsd[0],cmd.arg[0]);
     parsd[0] = cmd.arg[0];
+    //parsd[0] = cmd.arg[0];
     parsd[1] = NULL;
   } else {
     parsd[i] = NULL;
   }
-   ps = getSize(parsd);
 
   if ((pid = fork()) < 0) {
     fprintf(stderr, "%s: %s\n", cmd.arg[0], strerror(errno));
@@ -257,24 +255,17 @@ void redirHandler(Cmd cmd, bg_process *bgp) {
 
     if (execvp(parsd[0], parsd) == -1) {
       write (STDERR_FILENO, ERROR, strlen(ERROR));
+
       //FREE FROM CHILD
       for(i = 0; i < numBg; i++) {
         free(bgp[i].cmd);
        }
-      //for(i=0; i < cmd.arglen; i++) {
-      //  free(cmd.arg[i]);
-      //}
        free(bgp);
        free(cmd.arg);
       
       if(!is_interactive) {
           fclose(stream);
           }
-
-
-        for(i = 0; i < ps; i++) {
-        free(parsd[i]);
-        }
         free(parsd); 
             exit(EXIT_FAILURE);
     }
@@ -284,12 +275,7 @@ void redirHandler(Cmd cmd, bg_process *bgp) {
   if (!cmd.is_background) {
     waitpid(pid, NULL, 0);
   }
-
   //FREE PARSD 
-  //if(parsd!=NULL) {
-  for(i = 0; i < ps; i++) {
-    free(parsd[i]);
-  }
   free(parsd); 
 }
 
@@ -382,7 +368,7 @@ int getSize (char *in[]) {
     return count;
 }
 
-
+//MAIN
 int main(int argc, char** argv)
 {
   if (argc == 1) {
@@ -411,15 +397,18 @@ int main(int argc, char** argv)
 
   //allocate space for bg process structs
   bgp = malloc(MAX_ARGS * sizeof(bg_process*));
+  char** args =  malloc(sizeof(char*) * MAX_ARGS);
 
   if (bgp == NULL) {
     exit(EXIT_FAILURE);
   }
 
-INTERACTIVE_START: while (1) {
+Cmd cmd;
 
+while (1) {
+
+    cmd.arg = args;
     init();
-    Cmd cmd;
 
     bg_status_hndler(bgp, numBg);
 
@@ -432,11 +421,13 @@ INTERACTIVE_START: while (1) {
 
       bg_status_hndler(bgp, numBg);
       if (strlen(buffer) == 0) {
-        goto INTERACTIVE_START;
+        //goto INTERACTIVE_START;
+        continue;
       }
 
       if (parseCmd(buffer, &cmd)) {
-        goto INTERACTIVE_START;
+        //goto INTERACTIVE_START;
+        continue;
       }
 
       //**handling all internal commmands**//
@@ -447,7 +438,8 @@ INTERACTIVE_START: while (1) {
           int chd;
           if (n > 2) {
             fprintf(stderr, "cd: too many arguments\n");
-            goto INTERACTIVE_START;
+            //goto INTERACTIVE_START;
+            continue;
           }
           else if (n == 1) {
             chd = chdir(getenv("HOME"));
@@ -459,7 +451,8 @@ INTERACTIVE_START: while (1) {
             chd = chdir(cmd.arg[n - 1]);
             if (chd != 0) {
               fprintf(stderr, "cd: %s: %s\n", cmd.arg[n - 1], strerror(errno));
-              goto INTERACTIVE_START;
+              //goto INTERACTIVE_START;
+              continue;
             }
           }
         }
@@ -469,7 +462,8 @@ INTERACTIVE_START: while (1) {
           internal_cmd = 1;
           if (n != 1) {
             fprintf(stderr, "exit: too many arguments\n");
-            goto INTERACTIVE_START;
+            //goto INTERACTIVE_START;
+            continue;
           } else {
             exit(0);
           }
@@ -480,7 +474,8 @@ INTERACTIVE_START: while (1) {
           internal_cmd = 1;
           if (n != 1) {
             fprintf(stderr, "pwd: too many arguments\n");
-            goto INTERACTIVE_START;
+            //goto INTERACTIVE_START;
+            continue;
           } else {
             char cwd[1024];
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -505,25 +500,20 @@ INTERACTIVE_START: while (1) {
         continue;
       }
 
-    free(cmd.arg);
-
+      //free(cmd.arg);
     } else {
 
       int j;
-      //for(j=0; j < cmd.arglen; j++) {
-      // free(cmd.arg[j]);
-      //}
       for(j = 0 ; j < numBg; j++) {
           free(bgp[j].cmd);
       }
       free(bgp);
-      //free(cmd.arg);
+      free(args);
       fclose(stream);
       exit(EXIT_FAILURE);
 
     }
 
   }
-
   return 0;
 }
