@@ -1,0 +1,51 @@
+ls
+pwd
+
+cat abc
+echo this is a file > file_a
+echo hello > file_b
+echo hello > file_c
+sleep 2 &
+lol
+
+
+
+
+
+
+
+
+
+
+tr a b < file_a > file_b
+tr b c > file_c < file_b &
+
+
+
+
+
+
+cat file_a
+cat file_b
+cat file_c
+echo hello
+
+
+
+cd
+cd      private
+
+cd     fdsd
+cd  dfs  sfdfd
+pwd re
+exit dfs
+pwd
+
+
+ls &
+
+exit fkmekmfem
+lol
+
+echo ############################################################
+

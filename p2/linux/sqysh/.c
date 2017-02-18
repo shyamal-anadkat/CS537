@@ -56,6 +56,7 @@ int external_cmd = 0;
 char *cmd = NULL;
 int isbg = 0;
 struct bg_process *bgp;
+struct Cmd *command; 
 int numBg;
 
 int is_interactive = 0; 
@@ -74,7 +75,7 @@ void init_cmd (Cmd *cmd) {
   cmd->in_file = NULL;
   cmd->is_background = 0;
   cmd->out_file = NULL;
-  //cmd->arg = NULL;
+  cmd->arg = NULL;
   cmd->arglen = 0;
   cmd->is_special = 0;
   cmd->is_built_in = 0;
@@ -83,7 +84,7 @@ void init_cmd (Cmd *cmd) {
 
 
 //parses command
-int parseCmd (char* in, Cmd* cmd) {
+int parseCmd (char* in, Cmd *cmd) {
   n = 0;
   int i;
   char *ret;
@@ -255,27 +256,30 @@ void redirHandler(Cmd cmd, bg_process *bgp) {
       close(fd1);
     }
 
+
     if (execvp(parsd[0], parsd) == -1) {
       write (STDERR_FILENO, ERROR, strlen(ERROR));
+
+
       //FREE FROM CHILD
       for(i = 0; i < numBg; i++) {
-        free(bgp[i].cmd);
+       	free(bgp[i].cmd);
        }
       //for(i=0; i < cmd.arglen; i++) {
-      //  free(cmd.arg[i]);
+      //	free(cmd.arg[i]);
       //}
        free(bgp);
        free(cmd.arg);
       
       if(!is_interactive) {
-          fclose(stream);
-          }
+      		fclose(stream);
+  				}
 
 
         for(i = 0; i < ps; i++) {
-        free(parsd[i]);
-        }
-        free(parsd); 
+  			free(parsd[i]);
+  		  }
+  			free(parsd); 
             exit(EXIT_FAILURE);
     }
 
@@ -288,7 +292,7 @@ void redirHandler(Cmd cmd, bg_process *bgp) {
   //FREE PARSD 
   //if(parsd!=NULL) {
   for(i = 0; i < ps; i++) {
-    free(parsd[i]);
+  	free(parsd[i]);
   }
   free(parsd); 
 }
@@ -331,11 +335,11 @@ int start_prog(Cmd cmd, char **cmds, int is_background, int arglen, bg_process *
        fprintf(stderr, "%s: %s\n", cmds[0], strerror(errno));
 
     if(!is_interactive) {
-        fclose(stream);
-      }
+    	  fclose(stream);
+  		}
        //free here
        for(i = 0; i < numBg; i++) {
-        free(bgp[i].cmd);
+       	free(bgp[i].cmd);
        }
        free(bgp);
        free(cmd.arg);
@@ -359,10 +363,8 @@ void bg_status_hndler(bg_process* bgp, int numbg) {
   //int i;
   //for(i=0;i<numbg;i++) {
   int status;
-  pid_t st;
-  while ((st = waitpid(-1, &status, WNOHANG)) >0 ) {
-
-    int i;
+  pid_t st = waitpid(-1, &status, WNOHANG);
+  int i;
   for (i = 0; i < numbg; i++) {
 
     if (st == bgp[i].pid) {
@@ -371,7 +373,6 @@ void bg_status_hndler(bg_process* bgp, int numbg) {
       fflush(stdout);
     }
   }
-}
   return;
 }
 
@@ -419,7 +420,9 @@ int main(int argc, char** argv)
 INTERACTIVE_START: while (1) {
 
     init();
-    Cmd cmd;
+    //Cmd cmd;
+    command = malloc(MAX_ARGS* sizeof(Cmd*));
+    command.arg = malloc(MAX_ARGS* sizeof(char *));
 
     bg_status_hndler(bgp, numBg);
 
@@ -435,7 +438,7 @@ INTERACTIVE_START: while (1) {
         goto INTERACTIVE_START;
       }
 
-      if (parseCmd(buffer, &cmd)) {
+      if (parseCmd(buffer, command)) {
         goto INTERACTIVE_START;
       }
 
@@ -510,9 +513,9 @@ INTERACTIVE_START: while (1) {
     } else {
 
       int j;
-      //for(j=0; j < cmd.arglen; j++) {
-      // free(cmd.arg[j]);
-      //}
+      for(j=0; j < cmd.arglen; j++) {
+      	free(cmd.arg[j]);
+      }
       for(j = 0 ; j < numBg; j++) {
           free(bgp[j].cmd);
       }
