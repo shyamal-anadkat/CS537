@@ -58,8 +58,11 @@ argptr(int n, char **pp, int size)
   
   if(argint(n, &i) < 0)
     return -1;
-  if((uint)i >= proc->sz || (uint)i+size > proc->sz)
+  if((uint)i >= proc->sz || (uint)i+size > proc->sz || (uint)i ==0)
     return -1;
+  if(proc->pid!=1 && (uint)i<PGSIZE)
+    return -1;
+  
   *pp = (char*)i;
   return 0;
 }
@@ -72,7 +75,7 @@ int
 argstr(int n, char **pp)
 {
   int addr;
-  if(argint(n, &addr) < 0)
+  if(argint(n, &addr) < 0 || (proc->pid!=1 && addr<PGSIZE))
     return -1;
   return fetchstr(proc, addr, pp);
 }
