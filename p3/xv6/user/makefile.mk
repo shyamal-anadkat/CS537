@@ -11,6 +11,9 @@ USER_PROGS := \
 	ls\
 	mkdir\
 	null\
+	part1\
+	part2\
+	part3\
 	rm\
 	sh\
 	stressfs\

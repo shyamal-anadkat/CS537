@@ -44,6 +44,21 @@ trap(struct trapframe *tf)
     return;
   }
 
+  if (tf->trapno == T_PGFLT) {
+    uint addr = rcr2();
+    if ( !(addr < PGSIZE) ) {
+      if ( (proc->stksz - addr) < PGSIZE) {
+        if ( (proc->stksz - proc->sz - PGSIZE) >= PGSIZE) {
+          if (!allocuvm(proc->pgdir, proc->stksz-PGSIZE, proc->stksz)) {//FAIL}
+          else {
+            proc->stksz = proc->stksz - PGSIZE;
+            return;
+          }
+        }
+      }
+    }
+  }
+
   switch(tf->trapno){
   case T_IRQ0 + IRQ_TIMER:
     if(cpu->id == 0){

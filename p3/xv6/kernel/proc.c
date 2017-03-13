@@ -107,11 +107,19 @@ int
 growproc(int n)
 {
   uint sz;
+
+  if ( (int)(proc->stksz - proc->sz - n) < PGSIZE ) {
+    return -1;
+  }
   
   sz = proc->sz;
   if(n > 0){
-    if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
+    if(sz + n > proc->stksz - PGSIZE) {
       return -1;
+    }
+    else if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
+      return -1;
+
   } else if(n < 0){
     if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -142,6 +150,7 @@ fork(void)
     return -1;
   }
   np->sz = proc->sz;
+  np->stksz = proc->stksz;
   np->parent = proc;
   *np->tf = *proc->tf;
 

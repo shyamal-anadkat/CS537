@@ -33,6 +33,7 @@ exec(char *path, char **argv)
 
   // Load program into memory.
   sz = PGSIZE;
+
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
@@ -41,9 +42,10 @@ exec(char *path, char **argv)
     if(ph.memsz < ph.filesz)
       goto bad;
 
-    if((sz = allocuvm(pgdir, sz, sz + ph.va + ph.memsz)) == 0)
+    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0)
       goto bad;
-    
+    //cprintf("allocuvm : %d %d\n", sz, ph.va + ph.memsz);
+
     if(loaduvm(pgdir, (char*)ph.va, ip, ph.offset, ph.filesz) < 0)
       goto bad;
   }
@@ -52,11 +54,16 @@ exec(char *path, char **argv)
 
   // Allocate a one-page stack at the next page boundary
   sz = PGROUNDUP(sz);
-  if((sz = allocuvm(pgdir, sz, sz + PGSIZE)) == 0)
+  //if((sz = allocuvm(pgdir, sz, sz + PGSIZE)) == 0)
+  //  goto bad;
+  int newStk = allocuvm(pgdir, USERTOP-PGSIZE, USERTOP);
+  if(newStk == 0)
     goto bad;
+  //cprintf("new-stack: %d\n", newStk);
 
   // Push argument strings, prepare rest of stack in ustack.
-  sp = sz;
+  sp = newStk; //points at end of stack 
+
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
       goto bad;
@@ -86,6 +93,7 @@ exec(char *path, char **argv)
   oldpgdir = proc->pgdir;
   proc->pgdir = pgdir;
   proc->sz = sz;
+  proc->stksz = USERTOP-PGSIZE;
   proc->tf->eip = elf.entry;  // main
   proc->tf->esp = sp;
   switchuvm(proc);
