@@ -11,7 +11,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint argc, sz, sp, ustack[3+MAXARG+1];
+  uint argc, sz, sp, newStk, ustack[3+MAXARG+1];
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -42,7 +42,7 @@ exec(char *path, char **argv)
     if(ph.memsz < ph.filesz)
       goto bad;
 
-    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0)
+    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0) //ASK TA
       goto bad;
     //cprintf("allocuvm : %d %d\n", sz, ph.va + ph.memsz);
 
@@ -56,7 +56,7 @@ exec(char *path, char **argv)
   sz = PGROUNDUP(sz);
   //if((sz = allocuvm(pgdir, sz, sz + PGSIZE)) == 0)
   //  goto bad;
-  int newStk = allocuvm(pgdir, USERTOP-PGSIZE, USERTOP);
+  newStk = allocuvm(pgdir, USERTOP-PGSIZE, USERTOP);
   if(newStk == 0)
     goto bad;
   //cprintf("new-stack: %d\n", newStk);
@@ -80,6 +80,10 @@ exec(char *path, char **argv)
   ustack[2] = sp - (argc+1)*4;  // argv pointer
 
   sp -= (3+argc+1) * 4;
+
+  //tracking allocated space 
+
+  newStk = USERTOP - PGSIZE;
   if(copyout(pgdir, sp, ustack, (3+argc+1)*4) < 0)
     goto bad;
 
@@ -93,7 +97,7 @@ exec(char *path, char **argv)
   oldpgdir = proc->pgdir;
   proc->pgdir = pgdir;
   proc->sz = sz;
-  proc->stksz = USERTOP-PGSIZE;
+  proc->stksz = newStk;
   proc->tf->eip = elf.entry;  // main
   proc->tf->esp = sp;
   switchuvm(proc);

@@ -49,7 +49,7 @@ trap(struct trapframe *tf)
     if ( !(addr < PGSIZE) ) {
       if ( (proc->stksz - addr) < PGSIZE) {
         if ( (proc->stksz - proc->sz - PGSIZE) >= PGSIZE) {
-          if (!allocuvm(proc->pgdir, proc->stksz-PGSIZE, proc->stksz)) {//FAIL}
+          if (!allocuvm(proc->pgdir, proc->stksz-PGSIZE, proc->stksz)) {}//FAIL}
           else {
             proc->stksz = proc->stksz - PGSIZE;
             return;

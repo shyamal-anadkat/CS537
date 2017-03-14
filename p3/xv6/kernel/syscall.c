@@ -17,8 +17,10 @@
 int
 fetchint(struct proc *p, uint addr, int *ip)
 {
+  //bounds check 
   if((addr >= p->sz && addr < p->stksz) || (addr+4 > p->sz && addr+4 < p->stksz))
     return -1;
+  
   *ip = *(int*)(addr);
   return 0;
 }
@@ -35,8 +37,10 @@ fetchstr(struct proc *p, uint addr, char **pp)
     return -1;
 
   *pp = (char*)addr;
+
   if(addr < p->sz && addr >= PGSIZE)
       ep = (char*)p->sz;
+
   else if(addr >= p->stksz && addr < USERTOP)
       ep = (char*)USERTOP;
 
@@ -63,6 +67,8 @@ argptr(int n, char **pp, int size)
   
   if(argint(n, &i) < 0)
     return -1;
+
+  //check for bounds 
   if ( ((uint)i < PGSIZE) || ((uint)i >= USERTOP) || 
        ((uint)i+size > USERTOP) ||
        ((uint)i >= proc->sz && (uint)i < proc->stksz) ||
@@ -71,6 +77,7 @@ argptr(int n, char **pp, int size)
     return -1;
   
   *pp = (char*)i;
+
   return 0;
 }
 
@@ -85,6 +92,7 @@ argstr(int n, char **pp)
   
   if(argint(n, &addr) < 0)
     return -1;
+
   if ( ((uint)addr >= proc->sz) && ((uint)addr < proc->stksz) )
     return -1;
 
