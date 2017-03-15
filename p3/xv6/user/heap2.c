@@ -1,4 +1,4 @@
-/* stack should grow towards lower addresses as usual */
+/* heap must not grow into the page below stack */
 #include "types.h"
 #include "user.h"
 
@@ -12,19 +12,16 @@
   exit(); \
 }
 
-void
-foo(void *mainlocal) 
-{
-  int local;
-  assert((uint) &local < (uint) mainlocal);
-}
-
 int
 main(int argc, char *argv[])
 {
-  int local;
-  assert((uint)&local > 639*1024);
-  foo((void*) &local);
+  uint sz = (uint) sbrk(0);
+  uint stackpage = (160 - 1) * 4096;
+  uint guardpage = stackpage - 4096;
+
+  assert((int) sbrk(guardpage - sz) != -1);
+  assert((int) sbrk(-1*(guardpage - sz)) != -1);
+  assert((int) sbrk(guardpage - sz + 1) == -1);
   printf(1, "TEST PASSED\n");
   exit();
 }

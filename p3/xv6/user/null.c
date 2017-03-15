@@ -1,18 +1,25 @@
+/* null pointer dereference should kill process */
 #include "types.h"
 #include "stat.h"
 #include "user.h"
 
-/* Check basic functionality for part 1: should print one line and then trap & die. */
-
 int
-main(int argc, char** argv)
+main(int argc, char *argv[])
 {
-	int* p = NULL;
-	if (pipe(p) != -1)
-		printf(1, "oops [1]\n");
-	if (pipe(p+1) != -1)
-		printf(1, "oops [2]\n");
-	printf(1, "should see this\n");
-	printf(1, "oops [3]: %d\n", *p);
-	exit();
+   int ppid = getpid();
+
+   if (fork() == 0) {
+      uint * nullp = (uint*)0;
+      printf(1, "null dereference: ");
+      printf(1, "%x %x\n", nullp, *nullp);
+      // this process should be killed
+      printf(1, "TEST FAILED\n");
+      kill(ppid);
+      exit();
+   } else {
+      wait();
+   }
+
+   printf(1, "TEST PASSED\n");
+   exit();
 }

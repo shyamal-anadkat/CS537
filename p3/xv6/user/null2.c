@@ -1,3 +1,4 @@
+/* any dereference from first page should fault */
 #include "types.h"
 #include "stat.h"
 #include "user.h"

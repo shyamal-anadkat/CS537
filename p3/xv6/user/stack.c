@@ -1,4 +1,4 @@
-/* stack should grow towards lower addresses as usual */
+/* stack should be at high end of address space */
 #include "types.h"
 #include "user.h"
 
@@ -12,19 +12,11 @@
   exit(); \
 }
 
-void
-foo(void *mainlocal) 
-{
-  int local;
-  assert((uint) &local < (uint) mainlocal);
-}
-
 int
 main(int argc, char *argv[])
 {
   int local;
-  assert((uint)&local > 639*1024);
-  foo((void*) &local);
+  assert(&local == (void*) 0x9ffdc);
   printf(1, "TEST PASSED\n");
   exit();
 }

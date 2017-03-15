@@ -10,7 +10,6 @@ USER_PROGS := \
 	ln\
 	ls\
 	mkdir\
-	null\
 	part1\
 	part2\
 	part3\
@@ -21,9 +20,20 @@ USER_PROGS := \
 	usertests\
 	wc\
 	zombie\
-	stackgrow\
+	ec\
+	bounds2\
+	bounds3\
+	bounds4\
+	bounds\
+	heap2\
+	heap\
 	null2\
-	stack2
+	null\
+	stack2\
+	stack3\
+	stack4\
+	stack\
+	syscalls
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
@@ -76,7 +86,7 @@ USER_LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null)
 USER_LDFLAGS += -nostdlib
 
 # use simple contiguous section layout and do not use dynamic linking
-USER_LDFLAGS += --omagic
+USER_LDFLAGS += --no-omagic
 
 # where program execution should begin
 USER_LDFLAGS += --entry=main
@@ -111,4 +121,3 @@ user/%.d: user/%.c
 user/%.d: user/%.S
 	$(CC) $(CPPFLAGS) $(USER_CPPFLAGS) $(ASFLAGS) $(USER_ASFLAGS) \
 		-M -MG $< -MF $@ -MT $@ -MT $(<:.S=.o)
-

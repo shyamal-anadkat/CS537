@@ -10,12 +10,13 @@ int
 exec(char *path, char **argv)
 {
   char *s, *last;
-  int i, off;
+  int i, off, perm;
   uint argc, sz, sp, newStk, ustack[3+MAXARG+1];
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
+  int mask =   0b0000000000000010;
 
   if((ip = namei(path)) == 0)
     return -1;
@@ -37,12 +38,15 @@ exec(char *path, char **argv)
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
+
+    //cprintf("flags: %x", ph.flags);
+
     if(ph.type != ELF_PROG_LOAD)
       continue;
     if(ph.memsz < ph.filesz)
       goto bad;
-
-    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0) //ASK TA
+    perm = mask & ph.flags;
+    if((sz = allocuvmForExtraCredit(pgdir, sz, ph.va + ph.memsz, perm)) == 0) //ASK TA
       goto bad;
     //cprintf("allocuvm : %d %d\n", sz, ph.va + ph.memsz);
 

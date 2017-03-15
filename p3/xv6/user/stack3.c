@@ -1,4 +1,4 @@
-/* stack should grow towards lower addresses as usual */
+/* stack should grow automatically on a page fault */
 #include "types.h"
 #include "user.h"
 
@@ -13,18 +13,22 @@
 }
 
 void
-foo(void *mainlocal) 
+recurse(int n) 
 {
-  int local;
-  assert((uint) &local < (uint) mainlocal);
+  if(n > 0)
+    recurse(n-1);
 }
 
 int
 main(int argc, char *argv[])
 {
-  int local;
-  assert((uint)&local > 639*1024);
-  foo((void*) &local);
-  printf(1, "TEST PASSED\n");
+  int pid = fork();
+  if(pid == 0) {
+    recurse(500); // if the fault is not handled, we will not reach the print
+    printf(1, "TEST PASSED\n");
+    exit();
+  } else {
+    wait();
+  }
   exit();
 }
