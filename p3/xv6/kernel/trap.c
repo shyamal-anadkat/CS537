@@ -45,6 +45,12 @@ trap(struct trapframe *tf)
   }
 
   //handle page fault, stack resizing and unmapped 
+  /*If the trap was triggered by an attempt to access the first invalid page beyond the stack, 
+  instead of killing the process, allocate a new page and map it into the process's address space 
+  at an appropriate location such that it acts as a new page of stack space, and then continue executing the process. 
+  You should expand the stack in this way if and only if the trapping access is within one page curr SP 
+  (so that accesses that are way out of bounds don't cause the stack to suddenly grow enormously). */
+  
   if (tf->trapno == T_PGFLT) {
     uint addr = rcr2();
     if ( !(addr < PGSIZE) ) {

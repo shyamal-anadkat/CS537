@@ -18,8 +18,10 @@ int
 fetchint(struct proc *p, uint addr, int *ip)
 {
   //bounds check 
-  if((addr >= p->sz && addr < p->stksz) || (addr+4 > p->sz && addr+4 < p->stksz))
+  if((addr >= p->sz && addr < p->stksz) 
+    || (addr+4 > p->sz && addr+4 < p->stksz)) {
     return -1;
+}
   
   *ip = *(int*)(addr);
   return 0;
@@ -38,7 +40,7 @@ fetchstr(struct proc *p, uint addr, char **pp)
 
   *pp = (char*)addr;
 
-  if(addr < p->sz && addr >= PGSIZE)
+  if(addr < p->sz && addr >= PGSIZE) 
       ep = (char*)p->sz;
 
   else if(addr >= p->stksz && addr < USERTOP)
