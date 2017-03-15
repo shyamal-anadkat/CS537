@@ -1,58 +1,65 @@
-/* stack should not grow into heap (program must terminate) */
+/* syscall argument checks (string arg) */
 #include "types.h"
+#include "stat.h"
 #include "user.h"
+#include "fcntl.h"
 
 #undef NULL
 #define NULL ((void*)0)
 
-#define PGSIZE 4096
-#define PGROUNDUP(sz) (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-
 #define assert(x) if (x) {} else { \
-  printf(1, "%s: %d ", __FILE__, __LINE__); \
-  printf(1, "assert failed (%s)\n", # x); \
-  printf(1, "TEST FAILED\n"); \
-  exit(); \
+   printf(1, "%s: %d ", __FILE__, __LINE__); \
+   printf(1, "assert failed (%s)\n", # x); \
+   printf(1, "TEST FAILED\n"); \
+   exit(); \
 }
 
-void
-growstack(int n) 
-{
-  char filler[4096];
-  filler[0] = filler[0]; // must use or compiler error...
-  if(n > 1)
-    growstack(n-1);
+void foo() {
+  int local[100];
+  if((uint)&local >= 150*4096) foo();
 }
 
 int
 main(int argc, char *argv[])
 {
-  int ppid = getpid();
-  uint sz = (uint) sbrk(0);
-  uint stackpage = (160 - 1) * PGSIZE;
-  uint guardpage = stackpage - PGSIZE;
+  char *str;
+  int fd;
 
-  // ensure they actually placed the stack high...
-  assert((uint)&ppid == 0x9ffcc);
+  // ensure stack is actually high...
+  uint STACK = 159*4096;
+  uint USERTOP = 160*4096;
+  assert((uint) &str > STACK);
 
-  // should work fine
-  growstack(1);
-  stackpage -= PGSIZE;
-  guardpage -= PGSIZE;
+  /* below code/heap */
+  str = (char*) 0xfff;
+  assert(open(str, O_WRONLY|O_CREATE) == -1);
 
-  // grow heap right below the guard page
-  assert((int) sbrk(guardpage - sz) != -1);
+  /* within heap */
+  str = (char*) sbrk(0) - 4;
+  strcpy(str, "tmp");
+  fd = open(str, O_WRONLY|O_CREATE);
+  assert(fd != -1);
+  assert(unlink(str) != -1);
 
-  int pid = fork();
-  if(pid == 0) {
-    // should fail
-    growstack(2);
-    printf(1, "TEST FAILED\n");
-    kill(ppid);
-    exit();
-  } else {
-    wait();
-  }
+  /* spanning heap top */
+  str[3] = 'a';
+  assert(open(str, O_WRONLY|O_CREATE) == -1);
+
+  /* below stack */
+  str = (char*) STACK-1;
+  assert(open(str, O_WRONLY|O_CREATE) == -1);
+
+  /* within stack */
+  str = (char*) STACK+1024;
+  strcpy(str, "tmp");
+  fd = open(str, O_WRONLY|O_CREATE);
+  assert(fd != -1);
+  assert(unlink(str) != -1);
+
+  /* spanning stack top */
+  str = (char*) USERTOP-1;
+  str[0] = 'a';
+  assert(open(str, O_WRONLY|O_CREATE) == -1);
 
   printf(1, "TEST PASSED\n");
   exit();

@@ -54,11 +54,11 @@ exec(char *path, char **argv)
 
   // Allocate a one-page stack at the next page boundary
   sz = PGROUNDUP(sz);
-  //if((sz = allocuvm(pgdir, sz, sz + PGSIZE)) == 0)
-  //  goto bad;
+
   newStk = allocuvm(pgdir, USERTOP-PGSIZE, USERTOP);
   if(newStk == 0)
     goto bad;
+
   //cprintf("new-stack: %d\n", newStk);
 
   // Push argument strings, prepare rest of stack in ustack.

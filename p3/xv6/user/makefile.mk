@@ -67,6 +67,8 @@ USER_CFLAGS += -m32
 # generate code for 32-bit environment
 USER_ASFLAGS := $(USER_CFLAGS)
 
+USER_LDFLAGS += -dTuser/ulink.lds
+
 # FreeBSD ld wants ``elf_i386_fbsd''
 USER_LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null)
 
