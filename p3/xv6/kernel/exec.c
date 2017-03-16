@@ -26,13 +26,14 @@ exec(char *path, char **argv)
   // Check ELF header
   if(readi(ip, (char*)&elf, 0, sizeof(elf)) < sizeof(elf))
     goto bad;
+  
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
   if((pgdir = setupkvm()) == 0)
     goto bad;
 
-  // Load program into memory.
+   // Load program into memory.
   sz = PGSIZE;
 
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
@@ -45,9 +46,12 @@ exec(char *path, char **argv)
       continue;
     if(ph.memsz < ph.filesz)
       goto bad;
+
     perm = mask & ph.flags;
+
     if((sz = allocuvmForExtraCredit(pgdir, sz, ph.va + ph.memsz, perm)) == 0) //ASK TA
       goto bad;
+
     //cprintf("allocuvm : %d %d\n", sz, ph.va + ph.memsz);
 
     if(loaduvm(pgdir, (char*)ph.va, ip, ph.offset, ph.filesz) < 0)

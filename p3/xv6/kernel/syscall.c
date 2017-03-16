@@ -75,7 +75,7 @@ argptr(int n, char **pp, int size)
        ((uint)i+size > USERTOP) ||
        ((uint)i >= proc->sz && (uint)i < proc->stksz) ||
        ((uint)i+size > proc->sz && (uint)i+size < proc->stksz)
-     )   {
+     ){
     return -1;
 }
   

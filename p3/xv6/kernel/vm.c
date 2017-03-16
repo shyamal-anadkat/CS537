@@ -244,11 +244,12 @@ allocuvmForExtraCredit(pde_t *pgdir, uint oldsz, uint newsz, int writeperm)
       return 0;
     }
     memset(mem, 0, PGSIZE);
+
     if(writeperm) {
-    mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), PTE_W|PTE_U);
-  } else {
-    mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), PTE_U);
-  }
+      mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), PTE_W|PTE_U);
+    } else {
+       mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), PTE_U);
+    }
   }
   return newsz;
 }

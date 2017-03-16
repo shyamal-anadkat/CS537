@@ -1,13 +1,17 @@
-/* heap must not grow into the page below stack */
+
+/* syscall argument checks (null page) */
 #include "types.h"
+#include "stat.h"
 #include "user.h"
+#include "fcntl.h"
+
 
 int
 main(int argc, char *argv[])
 {
+	char* s = "this is a stricccng constant";
+	*s = 'x';
 
-  char* s = "this is a string constant";
-  *s = 'x';
-  printf(1, "TEST FAILED\n");
+  printf(1, "TEST PASSED\n");
   exit();
 }

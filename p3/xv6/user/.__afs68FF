@@ -19,7 +19,19 @@ USER_PROGS := \
 	tester\
 	wc\
 	zombie\
-	ec
+	ec\
+	bounds2\
+	bounds3\
+	bounds4\
+	bounds\
+	heap2\
+	heap\
+	null2\
+	null\
+	stack2\
+	stack3\
+	stack4\
+	stack
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
