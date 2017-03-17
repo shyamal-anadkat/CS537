@@ -93,11 +93,15 @@ argstr(int n, char **pp)
 {
   int addr;
   
+
   if(argint(n, &addr) < 0)
     return -1;
 
   if ( ((uint)addr >= proc->sz) && ((uint)addr < proc->stksz) )
     return -1;
+
+  if((uint)addr < PGSIZE && proc->pid != 1)
+  	return -1;
 
   return fetchstr(proc, addr, pp);
 }
